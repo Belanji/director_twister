@@ -6,21 +6,11 @@
 #include "./director.h"
 
 const int nz=50;
-const int time_relvant_digits=2;
 
 
 
 
 
-void print_snapshot_with_time( const double * phi,
-			       const double time)
-			       
-{
-  FILE * snapshot_file;
-  
-  //open()
-
-}
 
 
 int main (int argc, char * argv[]) {
@@ -28,9 +18,9 @@ int main (int argc, char * argv[]) {
   double * theta, * phi;
   struct lc_cell lc_environment;
   double ti=0.0, tf=200.0;
-  double time=ti;
+  double time=ti, dz;
   double timeprint=0.2;
-  FILE * time_file;
+  FILE * time_file, * snapshot_file;
   const char * time_file_name="middle_sin.dat";    
   
   lc_environment.k11=16.7;
@@ -39,8 +29,9 @@ int main (int argc, char * argv[]) {
   lc_environment.n0=1.4774;
   lc_environment.ne=1.5578;
   lc_environment.viscosity=186.0;
-  lc_environment.cell_length=5.0;
-  
+  lc_environment.cell_length=2.0;
+  dz=lc_environment.cell_length/nz;
+
   lc_environment.surf_viscosity[0]=0.1*186.0*5.0;
   lc_environment.surf_viscosity[1]=0.1*186.0*5.0;
 
@@ -54,9 +45,10 @@ int main (int argc, char * argv[]) {
   lc_environment.wa[0]=atof(argv[1]);
   lc_environment.wa[1]=atof(argv[2]);
 
-  lc_environment.omega_d[0]=0.2;
+  lc_environment.omega_d[0]=0.05;
   lc_environment.omega_d[1]=0.0;
 
+  
   
   gsl_odeiv2_system sys = {frank_energy, jacobian, nz+1, &lc_environment};
 
@@ -64,8 +56,11 @@ int main (int argc, char * argv[]) {
   //gsl_odeiv2_driver * pde_driver =gsl_odeiv2_driver_alloc_y_new (&sys, gsl_odeiv2_step_rk8pd, 1e-9, 1e-6, 0.0);
   gsl_odeiv2_driver * pde_driver =gsl_odeiv2_driver_alloc_y_new (&sys, gsl_odeiv2_step_bsimp, 1e-6, 1e-6, 0.0);
 
+
   time_file=fopen(time_file_name,"w");
-  
+  snapshot_file=fopen("phi_time.dat","w");
+
+	
   phi= (double *) malloc( (nz+1)*sizeof(double) );
 
   for (int ii=0; ii<=nz;ii++)
@@ -74,20 +69,25 @@ int main (int argc, char * argv[]) {
 
     };
 
+  print_snapshot_to_file(phi,time,dz,snapshot_file);
   fprintf(time_file,"%f  %f \n",time, sin(phi[nz/2]) );
 
   while(time <tf)
     {
       int status = gsl_odeiv2_driver_apply (pde_driver, &time, time+timeprint, phi);      
-	
+
+      
       if (status != GSL_SUCCESS)
 	{
 	  printf ("error, return value=%d\n", status);
    
 	};
 
-  
-        fprintf(time_file,"%f  %f \n",time, sin(phi[nz/2]) );
+      
+      print_snapshot_to_file(phi,time,dz,snapshot_file);
+
+  //print_phi_time(phi,time,dz);
+      fprintf(time_file,"%f  %f \n",time, sin(phi[nz/2]) );
 
     };
   
@@ -95,6 +95,7 @@ int main (int argc, char * argv[]) {
   gsl_odeiv2_driver_free (pde_driver);
   free(phi);
   fclose(time_file);
+  fclose(snapshot_file);
   return 0;
 
 
@@ -202,3 +203,48 @@ int jacobian(double t, const double phi[], double * dfdphi, double dfdt[], void 
   
 };
 
+
+int print_snapshot_to_file(const double * phi,
+			   const double time,
+			   const double dz,
+			   FILE * snapshot_file)
+{
+
+      fprintf(snapshot_file,"#time=%f\n",time);
+
+      for(int ii=0;ii<=nz;ii++)
+	{
+	  
+	  fprintf(snapshot_file,"%f  %f\n",ii*dz,phi[ii]);
+      
+
+	};
+      fprintf(snapshot_file,"\n\n");
+
+};
+
+int print_phi_time( const double * phi,
+		    const double time,
+		    const double dz )
+			       
+{
+  FILE * snapshot_file;
+  char snap_name[50];
+
+  sprintf(snap_name,"time=%f.dat",time);
+  snapshot_file=fopen(snap_name,"w");
+
+  fprintf(snapshot_file,"#i  nx        ny         nz         phi   time=%f, dz=%f\n",time,dz);
+
+  for(int ii=0;ii<=nz;ii++)
+    {
+
+      fprintf(snapshot_file,"%i  %f  %f  %f  %f\n",ii,cos(phi[ii]),sin(phi[ii]), 0.0, phi[ii]);
+      
+
+    };
+
+  fclose(snapshot_file);
+  
+  return 0;
+};
