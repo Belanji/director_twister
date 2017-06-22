@@ -8,32 +8,27 @@
 const int nz=50;
 
 
-
-
-
-
-
 int main (int argc, char * argv[]) {
 
   double * theta, * phi;
   struct lc_cell lc_environment;
-  double ti=0.0, tf=200.0;
+  double ti=0.0, tf=100.0;
   double time=ti, dz;
   double timeprint=0.2;
   FILE * time_file, * snapshot_file;
   const char * time_file_name="middle_sin.dat";    
   
-  lc_environment.k11=16.7;
+  lc_environment.k11=1.0;
   lc_environment.k22=7.0;
-  lc_environment.k33=18.1;
+  lc_environment.k33=1.0;
   lc_environment.n0=1.4774;
   lc_environment.ne=1.5578;
   lc_environment.viscosity=186.0;
-  lc_environment.cell_length=2.0;
+  lc_environment.cell_length=5.0;
   dz=lc_environment.cell_length/nz;
 
-  lc_environment.surf_viscosity[0]=0.1*186.0*5.0;
-  lc_environment.surf_viscosity[1]=0.1*186.0*5.0;
+  lc_environment.surf_viscosity[0]=0.1*lc_environment.viscosity*lc_environment.cell_length;
+  lc_environment.surf_viscosity[1]=0.1*lc_environment.viscosity*lc_environment.cell_length;
 
   lc_environment.pretilt[0]=0.0;
   lc_environment.pretilt[1]=0.0;
@@ -45,7 +40,7 @@ int main (int argc, char * argv[]) {
   lc_environment.wa[0]=atof(argv[1]);
   lc_environment.wa[1]=atof(argv[2]);
 
-  lc_environment.omega_d[0]=0.05;
+  lc_environment.omega_d[0]=0.2;
   lc_environment.omega_d[1]=0.0;
 
   
@@ -53,8 +48,8 @@ int main (int argc, char * argv[]) {
   gsl_odeiv2_system sys = {frank_energy, jacobian, nz+1, &lc_environment};
 
 
-  //gsl_odeiv2_driver * pde_driver =gsl_odeiv2_driver_alloc_y_new (&sys, gsl_odeiv2_step_rk8pd, 1e-9, 1e-6, 0.0);
-  gsl_odeiv2_driver * pde_driver =gsl_odeiv2_driver_alloc_y_new (&sys, gsl_odeiv2_step_bsimp, 1e-6, 1e-6, 0.0);
+  //gsl_odeiv2_driver * pde_driver =gsl_odeiv2_driver_alloc_y_new (&sys, gsl_odeiv2_step_rk8pd, 1e-6, 1e-9, 0.0);
+  gsl_odeiv2_driver * pde_driver =gsl_odeiv2_driver_alloc_y_new (&sys, gsl_odeiv2_step_bsimp, 1e-8, 1e-8, 0.0);
 
 
   time_file=fopen(time_file_name,"w");

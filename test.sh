@@ -1,11 +1,15 @@
 #!/bin/bash 
 
 rm director_twister
-gcc director.c -lm -lgsl -lgslcblas -o director_twister
+icc director.c -lm -lgsl -lgslcblas -o director_twister
 
 homeDirr=$(pwd)
-export wup=( 10 50 100 200 1000 )
-export wdown=( 10 50 100 200 1000 )
+export wup=( 10.0 50.0 100.0 200.0 1000.0 )
+export wdown=( 10.0 50.0 100.0 200.0 1000.0 )
+
+#export wup=( 0.0 0.1 1.0 10.0 100.0 )  
+#export wdown=( 0.0 0.1 1.0 10.0 100.0 )
+
 
 for wd in ${wdown[@]}
 do
@@ -42,5 +46,5 @@ do
 
 done
 
-#gnuplot -e "wa='${ww[*]}'"  plot.gp
-#evince watop_const.pdf &
+gnuplot   plot.gp
+
