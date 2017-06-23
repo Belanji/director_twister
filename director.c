@@ -1,31 +1,34 @@
 #include <stdio.h>
+#include <string.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_odeiv2.h>
 #include <math.h>
+#include <stdlib.h>
 #include "./director.h"
-
+#include "./parser.h"
 const int nz=50;
 
 
 int main (int argc, char * argv[]) {
-
+  
   double * theta, * phi;
   struct lc_cell lc_environment;
-  double ti=0.0, tf=100.0;
-  double time=ti, dz;
+  double ti=0.0, tf=50.0;
+  double time=ti, dz,dt=1e-6;
   double timeprint=0.2;
   FILE * time_file, * snapshot_file;
   const char * time_file_name="middle_sin.dat";    
-  
+  int timesteper_flag=0;
+
+  //Standard values:
   lc_environment.k11=1.0;
-  lc_environment.k22=7.0;
+  lc_environment.k22=1.0;
   lc_environment.k33=1.0;
-  lc_environment.n0=1.4774;
-  lc_environment.ne=1.5578;
-  lc_environment.viscosity=186.0;
-  lc_environment.cell_length=5.0;
-  dz=lc_environment.cell_length/nz;
+  lc_environment.n0=1.0;
+  lc_environment.ne=1.0;
+  lc_environment.viscosity=1.0;
+  lc_environment.cell_length=1.0;
 
   lc_environment.surf_viscosity[0]=0.1*lc_environment.viscosity*lc_environment.cell_length;
   lc_environment.surf_viscosity[1]=0.1*lc_environment.viscosity*lc_environment.cell_length;
@@ -37,11 +40,19 @@ int main (int argc, char * argv[]) {
   lc_environment.pretwist[1]=0.0;
   
 
-  lc_environment.wa[0]=atof(argv[1]);
-  lc_environment.wa[1]=atof(argv[2]);
+  lc_environment.wa[0]=1.0;
+  lc_environment.wa[1]=1.0;
 
-  lc_environment.omega_d[0]=0.2;
+  lc_environment.omega_d[0]=0.0;
   lc_environment.omega_d[1]=0.0;
+
+
+  //Read the parameter values form the input file:
+  parse_input_file(  & lc_environment, & tf, & timeprint , & dt );
+  print_log_file( lc_environment, tf, dt, "log.file");
+  
+  
+  dz=lc_environment.cell_length/nz;
 
   
   
@@ -168,7 +179,7 @@ int jacobian(double t, const double phi[], double * dfdphi, double dfdt[], void 
   
   gsl_matrix_set_zero( &dfdphi_mat.matrix );
   
-  for(int i=0; i<=nz;i++)
+  for(int i=1; i<nz;i++)
     {
 
       dfdt[i]=0;
@@ -243,3 +254,23 @@ int print_phi_time( const double * phi,
   
   return 0;
 };
+
+
+void print_log_file(const struct lc_cell lc,
+		    const double  tf,
+		    const double  dt,
+		    const char something[])
+{
+
+  printf("\n\nValues used for the parameters:\n\n");
+  printf( "Kii:                        %lf  %lf  %lf\n",lc.k11,lc.k22,lc.k33 );
+  printf( "timestep(initial dt):       %lf \n",dt);
+  printf( "cell length:                %lf \n",lc.cell_length);
+  printf( "bulk viscosity:             %lf \n",lc.viscosity);
+  printf( "surface viscosity:          %lf  %lf \n",lc.surf_viscosity[0], lc.surf_viscosity[1]);
+  printf( "anchoring energy(wa):       %lf  %lf \n",lc.wa[0], lc.wa[1]);
+  printf( "twsiting velocity(omega_d): %lf  %lf \n\n",lc.omega_d[0], lc.omega_d[1]);
+    
+    
+};
+

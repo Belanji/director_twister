@@ -1,3 +1,7 @@
+#ifndef director__
+
+#define director__
+#include  <stdio.h>
 
 struct lc_cell
 {
@@ -11,9 +15,17 @@ struct lc_cell
   
 };
 
-int frank_energy (double t, const double phi[], double f[], struct lc_cell *params);
 
-int jacobian(double t, const double phi[], double * dfdphi, double dfdt[], void * params);
+int frank_energy (double t,
+		  const double phi[],
+		  double f[],
+		  struct lc_cell *params);
+
+int jacobian(double t,
+	     const double phi[],
+	     double * dfdphi,
+	     double dfdt[],
+	     void * params);
 
 
 int print_phi_time( const double *,
@@ -23,4 +35,12 @@ int print_phi_time( const double *,
 int print_snapshot_to_file(const double *,
 			   const double  ,
 			   const double  ,
-			         FILE   *);
+			   FILE   *);
+
+void print_log_file(const struct lc_cell,
+		    const double ,
+		    const double ,
+		    const char []);
+
+
+#endif
