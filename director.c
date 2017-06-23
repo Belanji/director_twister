@@ -109,7 +109,7 @@ int main (int argc, char * argv[]) {
      
 
     
-int frank_energy (double t, const double phi[], double f[], struct lc_cell *params)
+int frank_energy (double t, const double phi[], double f[], void * params)
 { 
   struct lc_cell mu = *(struct lc_cell *)params;
   double dz = mu.cell_length/nz;

@@ -19,7 +19,7 @@ struct lc_cell
 int frank_energy (double t,
 		  const double phi[],
 		  double f[],
-		  struct lc_cell *params);
+		  void  * params);
 
 int jacobian(double t,
 	     const double phi[],
