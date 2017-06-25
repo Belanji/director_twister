@@ -2,7 +2,8 @@
 #include "parser.h"
 #include <string.h>
 #include <stdlib.h>
-
+const double pi=3.141592653589793;
+ 
 void parse_input_file(struct lc_cell  * lc,
 		      double * tf,
 		      double * timeprint,
@@ -212,6 +213,44 @@ void parse_input_file(struct lc_cell  * lc,
 	      printf("Please review your input file.\n Aborting the program\n");
 	      exit(0);
 	    };
+	  
+	  fgets(garbage,400,stdin);
+	  
+
+	}
+            else if (strcmp(parser,"chiral_power") == 0  || strcmp(parser,"q") == 0 )
+	{
+
+	  
+	  error_handler=scanf("%lf",&lc->q);
+	  
+	  if (error_handler <= 0 )
+	    {
+
+	      printf("You placed a comment or a non numeric value after %s in your input file.\n",parser);
+	      printf("Please review your input file.\n Aborting the program\n");
+	      exit(0);
+	    };
+	  
+	  fgets(garbage,400,stdin);
+	  
+
+	}
+      else if (strcmp(parser,"pitch") == 0 || strcmp(parser,"Pitch") == 0  || strcmp(parser,"P") == 0 )
+	{
+
+	  double lc_pitch;
+	  error_handler=scanf("%lf",&lc_pitch);
+	  
+	  if (error_handler <= 0 )
+	    {
+
+	      printf("You placed a comment or a non numeric value after %s in your input file.\n",parser);
+	      printf("Please review your input file.\n Aborting the program\n");
+	      exit(0);
+	    };
+
+	  lc->q=2.0*pi/lc_pitch;
 	  
 	  fgets(garbage,400,stdin);
 	  

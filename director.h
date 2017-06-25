@@ -12,7 +12,7 @@ struct lc_cell
   double pretwist[2], pretilt[2];
   double wa[2], omega_d[2];
   double cell_length;
-  
+  double q;
 };
 
 
