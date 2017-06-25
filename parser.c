@@ -95,6 +95,27 @@ void parse_input_file(struct lc_cell  * lc,
 
 
 	}
+      else if (strcmp(parser,"dt") == 0 || strcmp(parser,"maximum_timestep") ==0 )
+	{
+
+
+	  error_handler=scanf("%lf",&dt);
+
+
+	  if (error_handler <= 0 )
+	    {
+
+	      printf("You placed a comment or a non numeric value after %s in your input file.\n",parser);
+	      printf("Please review your input file.\n Aborting the program\n");
+	      exit(0);
+
+	    };
+
+
+	  fgets(garbage,400,stdin);
+
+
+	}
       else if ( strcmp(parser,"timeprint") == 0 || strcmp(parser,"print_every") ==0 )
 	{
 

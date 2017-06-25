@@ -16,7 +16,7 @@ int main (int argc, char * argv[]) {
   double * theta, * phi;
   struct lc_cell lc_environment;
   double ti=0.0, tf=50.0;
-  double time=ti, dz,dt=1e-6;
+  double time=ti, dz,dt=1e-3;
   double timeprint=0.2;
   FILE * time_file, * snapshot_file;
   const char * time_file_name="middle_sin.dat";    
@@ -62,6 +62,9 @@ int main (int argc, char * argv[]) {
 
   gsl_odeiv2_driver * pde_driver =gsl_odeiv2_driver_alloc_y_new (&sys, gsl_odeiv2_step_rk8pd, 1e-6, 1e-9, 0.0);
   //gsl_odeiv2_driver * pde_driver =gsl_odeiv2_driver_alloc_y_new (&sys, gsl_odeiv2_step_msbdf, 1e-8, 1e-8, 0.0);
+
+
+  gsl_odeiv2_driver_set_hmax (pde_driver , dt );
 
 
   time_file=fopen(time_file_name,"w");
@@ -262,7 +265,7 @@ void print_log_file(const struct lc_cell lc,
 
   printf("\n\nValues used for the parameters:\n\n");
   printf( "Kii:                        %lf  %lf  %lf\n",lc.k11,lc.k22,lc.k33 );
-  printf( "timestep(initial dt):       %lf \n",dt);
+  printf( "maximum timestep (dt):      %lf \n",dt);
   printf( "cell length:                %lf \n",lc.cell_length);
   printf( "Chiral power (q):           %lf \n",lc.q);
   printf( "bulk viscosity:             %lf \n",lc.viscosity);
