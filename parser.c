@@ -2,9 +2,10 @@
 #include "parser.h"
 #include <string.h>
 #include <stdlib.h>
-const double pi=3.141592653589793;
+const static double pi=3.141592653589793;
  
 void parse_input_file(struct lc_cell  * lc,
+		      struct optical_setup  * opt,
 		      double * tf,
 		      double * timeprint,
 		      double * dt )
@@ -61,6 +62,57 @@ void parse_input_file(struct lc_cell  * lc,
 	{
 
 	  error_handler=scanf("%lf",&lc->k33);
+
+	  if (error_handler <= 0 )
+	    {
+
+	      printf("You placed a comment or a non numeric value after %s in your input file.\n",parser);
+	      printf("Please review your input file.\n Aborting the program\n");
+	      exit(0);
+	    };
+	  
+	  fgets(garbage,400,stdin);
+
+
+	}
+      else if ( strcmp(parser,"n0") == 0 || strcmp(parser,"N0")== 0 )
+	{
+
+	  error_handler=scanf("%lf",&lc->n0);
+
+	  if (error_handler <= 0 )
+	    {
+
+	      printf("You placed a comment or a non numeric value after %s in your input file.\n",parser);
+	      printf("Please review your input file.\n Aborting the program\n");
+	      exit(0);
+	    };
+	  
+	  fgets(garbage,400,stdin);
+
+
+	}
+            else if ( strcmp(parser,"lambda") == 0 || strcmp(parser,"wavelength")== 0 || strcmp(parser,"wave_length")== 0)
+	{
+
+	  error_handler=scanf("%lf",&opt->lambda);
+
+	  if (error_handler <= 0 )
+	    {
+
+	      printf("You placed a comment or a non numeric value after %s in your input file.\n",parser);
+	      printf("Please review your input file.\n Aborting the program\n");
+	      exit(0);
+	    };
+	  
+	  fgets(garbage,400,stdin);
+
+
+	}
+            else if ( strcmp(parser,"ne") == 0 || strcmp(parser,"Ne")== 0 )
+	{
+
+	  error_handler=scanf("%lf",&lc->ne);
 
 	  if (error_handler <= 0 )
 	    {

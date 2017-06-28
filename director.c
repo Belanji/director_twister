@@ -5,9 +5,12 @@
 #include <gsl/gsl_odeiv2.h>
 #include <math.h>
 #include <stdlib.h>
+#include <complex.h>
 #include "./director.h"
 #include "./parser.h"
 const int nz=60;
+const static double pi=3.141592653589793;
+
 
 
 int main (int argc, char * argv[]) {
@@ -15,12 +18,27 @@ int main (int argc, char * argv[]) {
   const double pi=3.141592653589793;
   double * theta, * phi;
   struct lc_cell lc_environment;
+  struct optical_setup opt;
   double ti=0.0, tf=50.0;
-  double time=ti, dz,dt=1e-3;
+  double time=ti, dz, trans, dt=1e-3;
   double timeprint=0.2;
-  FILE * time_file, * snapshot_file;
-  const char * time_file_name="middle_sin.dat";    
+  FILE * time_file, * snapshot_file, * transmitance_file;
+  const char * time_file_name="middle_sin.dat";
+  const char * transmitance_file_name="transmitance_time.dat";    
   int timesteper_kind_flag=0;
+  double complex Pol[2][2]= { {1.0, 0.0} , {0.0, 0.0} };
+  double complex Anal[2][2]= { {0.0, 0.0} , {0.0, 1.0} };
+  double complex Ei[2][2]= { {1.0, 0.0} , {0.0, 0.0} };
+  
+  for (int ii=0; ii<=1; ii++)
+      for (int jj=0; jj<=1; jj++)
+    {
+
+      opt.Pol[ii][jj]=Pol[ii][jj];
+      opt.Anal[ii][jj]=Anal[ii][jj];
+      opt.Ei[ii][jj]=Ei[ii][jj];
+      
+    };
 
   //Standard values:
   lc_environment.k11=1.0;
@@ -48,18 +66,22 @@ int main (int argc, char * argv[]) {
   lc_environment.omega_d[0]=0.0;
   lc_environment.omega_d[1]=0.0;
 
+  opt.lambda=0.550;
+  
 
+  
   //Read the parameter values form the input file:
-  parse_input_file(  & lc_environment, & tf, & timeprint , & dt );
-  print_log_file( lc_environment, tf, dt, "log.file");
+  parse_input_file(  & lc_environment, & opt , & tf, & timeprint , & dt );
+  print_log_file( lc_environment, opt, tf, dt, "log.file");
   
   dz=lc_environment.cell_length/nz;
-
+  lc_environment.dz=dz;
 
   //Starting the PDE solver:
   gsl_odeiv2_system sys = {frank_energy, jacobian, nz+1, &lc_environment};
 
 
+  //Choose the integrator:
   gsl_odeiv2_driver * pde_driver =gsl_odeiv2_driver_alloc_y_new (&sys, gsl_odeiv2_step_rk8pd, 1e-6, 1e-9, 0.0);
   //gsl_odeiv2_driver * pde_driver =gsl_odeiv2_driver_alloc_y_new (&sys, gsl_odeiv2_step_msbdf, 1e-8, 1e-8, 0.0);
 
@@ -69,19 +91,26 @@ int main (int argc, char * argv[]) {
 
   time_file=fopen(time_file_name,"w");
   snapshot_file=fopen("phi_time.dat","w");
+  transmitance_file=fopen(transmitance_file_name,"w");
+  
+  phi= (double *) malloc( 2*(nz+1)*sizeof(double) );
+  theta=(phi+nz+1);
 
-  phi= (double *) malloc( (nz+1)*sizeof(double) );
-
+  
   for (int ii=0; ii<=nz;ii++)
     {
 
       phi[ii]=(lc_environment.q*ii)/nz;
-      
+      theta[ii]=0.0;
     };
 
- 
+
+  trans=optical_transmitance (phi, theta, & lc_environment, &opt);
+  
   print_snapshot_to_file(phi,time,dz,snapshot_file);
   fprintf(time_file,"%f  %f \n",time, sin(phi[nz/2]) );
+  fprintf( transmitance_file,"%f  %f \n",time, trans );
+
 
   while(time <tf)
     {
@@ -94,9 +123,10 @@ int main (int argc, char * argv[]) {
    
 	};
 
-      
+      trans=optical_transmitance (phi, theta, & lc_environment, &opt);
       print_snapshot_to_file(phi,time,dz,snapshot_file);
       fprintf(time_file,"%f  %f \n",time, sin(phi[nz/2]) );
+      fprintf( transmitance_file,"%f  %f \n",time, trans );
 
     };
   
@@ -105,6 +135,7 @@ int main (int argc, char * argv[]) {
   free(phi);
   fclose(time_file);
   fclose(snapshot_file);
+  fclose(transmitance_file);
   return 0;
 
 
@@ -258,6 +289,7 @@ int print_phi_time( const double * phi,
 
 
 void print_log_file(const struct lc_cell lc,
+		    const struct optical_setup opt,
 		    const double  tf,
 		    const double  dt,
 		    const char something[])
@@ -271,8 +303,112 @@ void print_log_file(const struct lc_cell lc,
   printf( "bulk viscosity:             %lf \n",lc.viscosity);
   printf( "surface viscosity:          %lf  %lf \n",lc.surf_viscosity[0], lc.surf_viscosity[1]);
   printf( "anchoring energy(wa):       %lf  %lf \n",lc.wa[0], lc.wa[1]);
-  printf( "twsiting velocity(omega_d): %lf  %lf \n\n",lc.omega_d[0], lc.omega_d[1]);
-    
+  printf( "twsiting velocity(omega_d): %lf  %lf \n",lc.omega_d[0], lc.omega_d[1]);
+  printf( "Wavelength:                 %lf \n",opt.lambda);
+
+  printf( "Optical indexes(n_0 , n_e): %lf  %lf\n\n",lc.n0,lc.ne);
     
 };
 
+
+double optical_transmitance (const double *phi,
+			     const double * theta,
+			     const struct lc_cell * lc,
+			     struct optical_setup * opt)
+{
+
+  double Nep;	
+  double complex Pol[2][2];
+  double complex Anal[2][2];
+  double complex r[2][2], r1[2][2], ret[2][2];
+  double complex trans;
+  double complex sistema[2][2]={ {1.0,0.0}, {0.0,1.0} };
+  double n0=lc->n0;
+  double ne=lc->ne;
+  double dz=lc->dz;
+  double lambda=opt->lambda;
+  
+  
+  //Atention l_matmul overwrite the right matrix!!!
+  void r_matmul( double complex  M1[2][2], double complex  M2[2][2])
+  {
+
+    double complex temp[2][2];
+
+    temp[0][0]=M1[0][0]*M2[0][0]+M1[0][1]*M2[1][0];
+    temp[1][0]=M1[1][0]*M2[0][0]+M1[1][1]*M2[1][0];
+    temp[0][1]=M1[0][0]*M2[0][1]+M1[0][1]*M2[1][1];
+    temp[1][1]=M1[1][0]*M2[0][1]+M1[1][1]*M2[1][1];
+
+    M2[0][0]=temp[0][0];
+    M2[0][1]=temp[0][1];
+    M2[1][0]=temp[1][0];
+    M2[1][1]=temp[1][1];
+    
+  };
+
+
+    //Atention l_matmul overwrite the left matrix!!!
+  void l_matmul( double complex  M1[2][2],  double complex  M2[2][2])
+  {
+
+    double complex temp[2][2];
+
+    temp[0][0]=M1[0][0]*M2[0][0]+M1[0][1]*M2[1][0];
+    temp[1][0]=M1[1][0]*M2[0][0]+M1[1][1]*M2[1][0];
+    temp[0][1]=M1[0][0]*M2[0][1]+M1[0][1]*M2[1][1];
+    temp[1][1]=M1[1][0]*M2[0][1]+M1[1][1]*M2[1][1];
+
+    M1[0][0]=temp[0][0];
+    M1[0][1]=temp[0][1];
+    M1[1][0]=temp[1][0];
+    M1[1][1]=temp[1][1];
+    
+  };
+
+   
+  
+  for(int ii= 0; ii<= nz; ii++)
+    {
+           		
+      r1[0][0]=  cos(phi[ii]);
+      r1[0][1]=  sin(phi[ii]);
+      r1[1][0]= -sin(phi[ii]);
+      r1[1][1]=  cos(phi[ii]);
+
+      r[0][0]=  cos(phi[ii]);
+      r[0][1]= -sin(phi[ii]);
+      r[1][0]=  sin(phi[ii]);
+      r[1][1]=  cos(phi[ii]);
+
+      
+      Nep=ne*n0/sqrt( ne*ne*pow(sin(theta[ii]),2) +		\
+		      n0*n0*pow(cos(theta[ii]),2) );
+
+      ret[0][0]= cos( pi*dz*(Nep-n0)/lambda ) - I*sin( pi*dz*(Nep-n0)/lambda );
+      ret[0][1]= 0.0;
+      ret[1][0]= 0.0;
+      ret[1][1]= cos( pi*dz*(Nep-n0)/lambda ) + I*sin( pi*dz*(Nep-n0)/lambda );
+					
+      r_matmul(r1,sistema);
+      r_matmul(ret,sistema);
+      r_matmul(r,sistema);
+
+    }
+
+
+  r_matmul(opt->Anal,sistema);
+  l_matmul(sistema,opt->Pol);
+  l_matmul(sistema,opt->Ei);
+
+     
+  trans=sistema[0][0]*conj(sistema[0][0])+sistema[1][0]*conj(sistema[1][0]);
+    
+    
+  return trans;
+}
+
+
+
+
+//matrix multiply 
