@@ -1,0 +1,6 @@
+#!/bin/bash 
+
+rm director_twister
+icc -m64 -xHost -O2  parser.c director.c -lm -lgsl -lgslcblas -o director_twister
+
+

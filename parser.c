@@ -130,7 +130,7 @@ void parse_input_file(struct lc_cell  * lc,
 	{
 
 
-	  error_handler=scanf("%lf",&tf);
+	  error_handler=scanf("%lf",tf);
 
 
 	  if (error_handler <= 0 )
@@ -151,7 +151,7 @@ void parse_input_file(struct lc_cell  * lc,
 	{
 
 
-	  error_handler=scanf("%lf",&dt);
+	  error_handler=scanf("%lf",dt);
 
 
 	  if (error_handler <= 0 )
@@ -171,10 +171,11 @@ void parse_input_file(struct lc_cell  * lc,
       else if ( strcmp(parser,"timeprint") == 0 || strcmp(parser,"print_every") ==0 )
 	{
 
+	  printf("timeprint:  %lf   %d \n",*timeprint,error_handler);
+	  error_handler=scanf("%lf", timeprint);
+	  printf("timeprint:  %lf   %d \n",*timeprint,error_handler);
 
-	  error_handler=scanf("%lf",&timeprint);
-
-
+	  
 	  if (error_handler <= 0 )
 	    {
 

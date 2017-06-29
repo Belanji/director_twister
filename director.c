@@ -28,18 +28,20 @@ int main (int argc, char * argv[]) {
   int timesteper_kind_flag=0;
   double complex Pol[2][2]= { {1.0, 0.0} , {0.0, 0.0} };
   double complex Anal[2][2]= { {0.0, 0.0} , {0.0, 1.0} };
-  double complex Ei[2][2]= { {1.0, 0.0} , {0.0, 0.0} };
+  //double complex Ei[2][2]= { {1.0/sqrt(2.0), 0.0} , {1.0*I/sqrt(2.0), 0.0} };
+  double complex Ei[2][2]= { {1.0 , 0.0} , {0.0 , 0.0} };
   
   for (int ii=0; ii<=1; ii++)
-      for (int jj=0; jj<=1; jj++)
     {
+      for (int jj=0; jj<=1; jj++)
+	{
 
-      opt.Pol[ii][jj]=Pol[ii][jj];
-      opt.Anal[ii][jj]=Anal[ii][jj];
-      opt.Ei[ii][jj]=Ei[ii][jj];
+	  opt.Pol[ii][jj]=Pol[ii][jj];
+	  opt.Anal[ii][jj]=Anal[ii][jj];
+	  opt.Ei[ii][jj]=Ei[ii][jj];
       
+	};
     };
-
   //Standard values:
   lc_environment.k11=1.0;
   lc_environment.k22=1.0;
@@ -50,8 +52,8 @@ int main (int argc, char * argv[]) {
   lc_environment.viscosity=1.0;
   lc_environment.cell_length=1.0;
 
-  lc_environment.surf_viscosity[0]=0.1*lc_environment.viscosity*lc_environment.cell_length;
-  lc_environment.surf_viscosity[1]=0.1*lc_environment.viscosity*lc_environment.cell_length;
+  lc_environment.surf_viscosity[0]=1.0*lc_environment.viscosity*lc_environment.cell_length;
+  lc_environment.surf_viscosity[1]=1.0*lc_environment.viscosity*lc_environment.cell_length;
 
   lc_environment.pretilt[0]=0.0;
   lc_environment.pretilt[1]=0.0;
@@ -66,7 +68,7 @@ int main (int argc, char * argv[]) {
   lc_environment.omega_d[0]=0.0;
   lc_environment.omega_d[1]=0.0;
 
-  opt.lambda=0.550;
+  opt.lambda=0.600;
   
 
   
@@ -306,7 +308,8 @@ void print_log_file(const struct lc_cell lc,
   printf( "twsiting velocity(omega_d): %lf  %lf \n",lc.omega_d[0], lc.omega_d[1]);
   printf( "Wavelength:                 %lf \n",opt.lambda);
 
-  printf( "Optical indexes(n_0 , n_e): %lf  %lf\n\n",lc.n0,lc.ne);
+  printf( "Optical indexes(n_0 , n_e): %lf  %lf\n",lc.n0,lc.ne);
+  printf( "Simulation time: %lf  \n\n",tf);
     
 };
 
@@ -408,7 +411,4 @@ double optical_transmitance (const double *phi,
   return trans;
 }
 
-
-
-
-//matrix multiply 
+ 
