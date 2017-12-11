@@ -8,7 +8,7 @@
 #include <complex.h>
 #include "./director.h"
 #include "./parser.h"
-const int nz=60;
+const int nz=100;
 const static double pi=3.141592653589793;
 
 
@@ -23,13 +23,13 @@ int main (int argc, char * argv[]) {
   double time=ti, dz, trans, dt=1e-3;
   double timeprint=0.2;
   FILE * time_file, * snapshot_file, * transmitance_file;
-  const char * time_file_name="middle_sin.dat";
+  const char * time_file_name="phi_bottom_middle_top.dat";
   const char * transmitance_file_name="transmitance_time.dat";    
   int timesteper_kind_flag=0;
   double complex Pol[2][2]= { {1.0, 0.0} , {0.0, 0.0} };
   double complex Anal[2][2]= { {0.0, 0.0} , {0.0, 1.0} };
-  //double complex Ei[2][2]= { {1.0/sqrt(2.0), 0.0} , {1.0*I/sqrt(2.0), 0.0} };
-  double complex Ei[2][2]= { {1.0 , 0.0} , {0.0 , 0.0} };
+  double complex Ei[2][2]= { {1.0/sqrt(2.0), 0.0} , {1.0*I/sqrt(2.0), 0.0} };
+
   
   for (int ii=0; ii<=1; ii++)
     {
@@ -61,7 +61,6 @@ int main (int argc, char * argv[]) {
   lc_environment.pretwist[0]=0.0;
   lc_environment.pretwist[1]=0.0;
   
-
   lc_environment.wa[0]=1.0;
   lc_environment.wa[1]=1.0;
 
@@ -70,7 +69,6 @@ int main (int argc, char * argv[]) {
 
   opt.lambda=0.600;
   
-
   
   //Read the parameter values form the input file:
   parse_input_file(  & lc_environment, & opt , & tf, & timeprint , & dt );
@@ -104,15 +102,21 @@ int main (int argc, char * argv[]) {
 
       phi[ii]=(lc_environment.q*ii)/nz;
       theta[ii]=0.0;
+
     };
 
 
   trans=optical_transmitance (phi, theta, & lc_environment, &opt);
   
-  print_snapshot_to_file(phi,time,dz,snapshot_file);
-  fprintf(time_file,"%f  %f \n",time, sin(phi[nz/2]) );
+
+  fprintf(time_file,"#time phi[bottom]  phi[middle] phi[top] \n");
+  fprintf(time_file,"%f  %f  %f  %f\n",time, phi[0],phi[nz/2], phi[nz]);
+
+
+  fprintf( transmitance_file,"#time        transmitance\n" );
   fprintf( transmitance_file,"%f  %f \n",time, trans );
 
+  print_snapshot_to_file(phi,time,dz,snapshot_file);
 
   while(time <tf)
     {
@@ -121,13 +125,14 @@ int main (int argc, char * argv[]) {
       
       if (status != GSL_SUCCESS)
 	{
+
 	  printf ("error, return value=%d\n", status);
    
 	};
 
       trans=optical_transmitance (phi, theta, & lc_environment, &opt);
       print_snapshot_to_file(phi,time,dz,snapshot_file);
-      fprintf(time_file,"%f  %f \n",time, sin(phi[nz/2]) );
+      fprintf(time_file,"%f  %f  %f  %f\n",time, phi[0],phi[nz/2], phi[nz]);
       fprintf( transmitance_file,"%f  %f \n",time, trans );
 
     };
@@ -307,9 +312,8 @@ void print_log_file(const struct lc_cell lc,
   printf( "anchoring energy(wa):       %lf  %lf \n",lc.wa[0], lc.wa[1]);
   printf( "twsiting velocity(omega_d): %lf  %lf \n",lc.omega_d[0], lc.omega_d[1]);
   printf( "Wavelength:                 %lf \n",opt.lambda);
-
   printf( "Optical indexes(n_0 , n_e): %lf  %lf\n",lc.n0,lc.ne);
-  printf( "Simulation time: %lf  \n\n",tf);
+  printf( "Simulation time:            %lf  \n\n",tf);
     
 };
 

@@ -171,9 +171,9 @@ void parse_input_file(struct lc_cell  * lc,
       else if ( strcmp(parser,"timeprint") == 0 || strcmp(parser,"print_every") ==0 )
 	{
 
-	  printf("timeprint:  %lf   %d \n",*timeprint,error_handler);
+
 	  error_handler=scanf("%lf", timeprint);
-	  printf("timeprint:  %lf   %d \n",*timeprint,error_handler);
+
 
 	  
 	  if (error_handler <= 0 )
