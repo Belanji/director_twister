@@ -75,12 +75,12 @@ int main (int argc, char * argv[]) {
 
 
   nz=lc_environment.nz;
-  dz=lc_environment.cell_length/(nz);
+  dz=lc_environment.cell_length/(nz-1);
   lc_environment.dz=dz;
 
   
   //Starting the PDE solver:
-  gsl_odeiv2_system sys = {frank_energy, jacobian, nz+1, &lc_environment};
+  gsl_odeiv2_system sys = {frank_energy, jacobian, nz, &lc_environment};
 
 
   //Choose the integrator:
@@ -95,14 +95,14 @@ int main (int argc, char * argv[]) {
   snapshot_file=fopen("phi_time.dat","w");
   transmitance_file=fopen(transmitance_file_name,"w");
   
-  phi= (double *) malloc( 2*(nz+1)*sizeof(double) );
-  theta=(phi+nz+1);
+  phi= (double *) malloc( 2*(nz)*sizeof(double) );
+  theta=(phi+nz);
 
   
-  for (int ii=0; ii<=nz;ii++)
+  for (int ii=0; ii<nz;ii++)
     {
 
-      phi[ii]=(lc_environment.q*ii)/nz;
+      phi[ii]=(lc_environment.q*ii)/(nz-1);
       theta[ii]=0.0;
 
     };
@@ -134,7 +134,7 @@ int main (int argc, char * argv[]) {
 
       trans=optical_transmitance (phi, theta, nz, & lc_environment, &opt);
       print_snapshot_to_file(phi,time,dz,nz,snapshot_file);
-      fprintf(time_file,"%f  %f  %f  %f\n",time, phi[0],phi[nz/2], phi[nz]);
+      fprintf(time_file,"%f  %f  %f  %f\n",time, phi[0],phi[(nz-1)/2], phi[nz-1]);
       fprintf( transmitance_file,"%f  %f \n",time, trans );
 
     };
@@ -156,7 +156,7 @@ int frank_energy (double t, const double phi[], double f[], void * params)
 { 
   struct lc_cell mu = *(struct lc_cell *)params;
   int nz=mu.nz;
-  double dz = mu.cell_length/nz;
+  double dz = mu.cell_length/(nz-1);
   double k22= mu.k22;
   double omega_d[2],wa[2], pretwist[2];
   double viscosity, surf_viscosity[2];
@@ -173,7 +173,7 @@ int frank_energy (double t, const double phi[], double f[], void * params)
   q=mu.q;
 
   /*Bulk equations */  
-  for(int ii=1; ii<nz; ii++)
+  for(int ii=1; ii<nz-1; ii++)
     {
 
       d2phi=(phi[ii+1]+phi[ii-1]-2.0*phi[ii])/(dz*dz);
@@ -186,7 +186,7 @@ int frank_energy (double t, const double phi[], double f[], void * params)
   f[0]=(-(k22*(-((phi[1]-phi[0])/dz) + q)) + wa[0]*cos(pretwist[0] + omega_d[0]*t - phi[0])*sin(pretwist[0] + omega_d[0]*t - phi[0]))/surf_viscosity[0];
 
 
-f[nz]=(k22*(-((phi[nz]-phi[nz-1])/dz) + q) + wa[1]*cos(pretwist[1] + omega_d[1]*t - phi[nz])*sin(pretwist[1] + omega_d[1]*t - phi[nz]))/surf_viscosity[1];
+f[nz-1]=(k22*(-((phi[nz]-phi[nz-1])/dz) + q) + wa[1]*cos(pretwist[1] + omega_d[1]*t - phi[nz])*sin(pretwist[1] + omega_d[1]*t - phi[nz]))/surf_viscosity[1];
 
   //Boundary conditions n=1
 
@@ -203,7 +203,7 @@ int jacobian(double t, const double phi[], double * dfdphi, double dfdt[], void 
 {
   struct lc_cell mu = *(struct lc_cell *)params;
   int nz=mu.nz;
-  double dz = mu.cell_length/nz;
+  double dz = mu.cell_length/(nz-1);
   double k22= mu.k22;
   double omega_d[2],wa[2], pretwist[2];
   double viscosity, surf_viscosity[2];
@@ -222,7 +222,7 @@ int jacobian(double t, const double phi[], double * dfdphi, double dfdt[], void 
   
   gsl_matrix_set_zero( &dfdphi_mat.matrix );
   
-  for(int i=1; i<nz;i++)
+  for(int i=1; i<nz-1;i++)
     {
 
       dfdt[i]=0;
@@ -230,10 +230,10 @@ int jacobian(double t, const double phi[], double * dfdphi, double dfdt[], void 
     };
   
   dfdt[0]=(omega_d[0]*wa[0]*pow(cos(pretwist[0] + omega_d[0]*t - phi[0]),2) - omega_d[0]*wa[0]*pow( sin(pretwist[0] + omega_d[0]* t - phi[0]), 2))/surf_viscosity[0];
-  dfdt[nz]=(omega_d[1]*wa[1]*pow(cos(pretwist[1] + omega_d[1]*t - phi[nz]),2) - omega_d[1]*wa[1]*pow( sin(pretwist[1] + omega_d[1]* t - phi[nz]), 2))/surf_viscosity[1];
+  dfdt[nz-1]=(omega_d[1]*wa[1]*pow(cos(pretwist[1] + omega_d[1]*t - phi[nz]),2) - omega_d[1]*wa[1]*pow( sin(pretwist[1] + omega_d[1]* t - phi[nz]), 2))/surf_viscosity[1];
 
   
-  for(int i=1;i<nz;i++){
+  for(int i=1;i<nz-1;i++){
 
     gsl_matrix_set ( &dfdphi_mat.matrix,i,i-1,k22/(dz*dz*viscosity) );
     gsl_matrix_set ( &dfdphi_mat.matrix,i,i  ,-2.0*k22/(dz*dz*viscosity));
@@ -245,8 +245,8 @@ int jacobian(double t, const double phi[], double * dfdphi, double dfdt[], void 
   gsl_matrix_set ( &dfdphi_mat.matrix,0,0,( -(k22/dz) - wa[0]*pow(cos(pretwist[0] + omega_d[0]*t - phi[0]),2) + wa[0]*pow(sin(pretwist[0] + omega_d[0]*t - phi[0]),2) )/surf_viscosity[0] );
   gsl_matrix_set ( &dfdphi_mat.matrix,0,1,k22/(dz*surf_viscosity[0]) );
 
-  gsl_matrix_set( &dfdphi_mat.matrix,nz,nz-1,k22/(dz*surf_viscosity[1]) );		  
-  gsl_matrix_set( &dfdphi_mat.matrix,nz,nz,(-(k22/dz) - wa[1]*pow(cos(pretwist[1] + omega_d[1]*t - phi[nz]),2) + wa[1]*pow(sin(pretwist[1] + omega_d[1]*t - phi[nz]),2))/surf_viscosity[1] );
+  gsl_matrix_set( &dfdphi_mat.matrix,nz-1,nz-2,k22/(dz*surf_viscosity[1]) );		  
+  gsl_matrix_set( &dfdphi_mat.matrix,nz-1,nz-1,(-(k22/dz) - wa[1]*pow(cos(pretwist[1] + omega_d[1]*t - phi[nz-1]),2) + wa[1]*pow(sin(pretwist[1] + omega_d[1]*t - phi[nz-1]),2))/surf_viscosity[1] );
     
   return GSL_SUCCESS;
   
@@ -262,7 +262,7 @@ int print_snapshot_to_file(const double * phi,
 
       fprintf(snapshot_file,"#time=%f\n",time);
 
-      for(int ii=0;ii<=nz;ii++)
+      for(int ii=0;ii<nz;ii++)
 	{
 	  
 	  fprintf(snapshot_file,"%f  %f\n",ii*dz,phi[ii]);
@@ -287,7 +287,7 @@ int print_phi_time( const double * phi,
 
   fprintf(snapshot_file,"#i  nx        ny         nz         phi   time=%f, dz=%f\n",time,dz);
 
-  for(int ii=0;ii<=nz;ii++)
+  for(int ii=0;ii<nz;ii++)
     {
 
       fprintf(snapshot_file,"%i  %f  %f  %f  %f\n",ii,cos(phi[ii]),sin(phi[ii]), 0.0, phi[ii]);
@@ -383,7 +383,7 @@ double optical_transmitance (const double *phi,
 
    
   
-  for(int ii= 0; ii<= nz; ii++)
+  for(int ii= 0; ii< nz; ii++)
     {
            		
       r1[0][0]=  cos(phi[ii]);

@@ -310,7 +310,7 @@ void parse_input_file(struct lc_cell  * lc,
 	  
 
 	}
-      else if (strcmp(parser,"pitch") == 0 || strcmp(parser,"Pitch") == 0  || strcmp(parser,"P") == 0 )
+      else if (strcmp(parser,"pitch") == 0 || strcmp(parser,"Pitch") == 0  || strcmp(parser,"P0") == 0 || strcmp(parser,"p0") == 0)
 	{
 
 	  double lc_pitch;
