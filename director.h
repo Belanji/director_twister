@@ -14,6 +14,7 @@ struct lc_cell
   double cell_length;
   double dz;
   double q;
+  int nz;
 };
 
 
@@ -39,21 +40,24 @@ int jacobian(double t,
 
 int print_phi_time( const double *,
 		    const double  ,
-		    const double  );
+		    const double  ,
+		    const int );
 
 int print_snapshot_to_file(const double *,
 			   const double  ,
 			   const double  ,
+			   const int     ,
 			   FILE   *);
 
 void print_log_file(const struct lc_cell,
 		    const struct optical_setup,
 		    const double ,
-		    const double ,
+		    const double ,		    
 		    const char []);
 
 double optical_transmitance (const double *phi,
 			     const double * theta,
+			     const int ,
 			     const struct lc_cell * lc,
 			     struct optical_setup * opt);
 

@@ -1,0 +1,19 @@
+nz         200
+
+K11         1.00
+k22         1.00
+k33         1.00
+n0          1.54
+ne          1.70
+wa          300.0   300.0
+q           0.0
+gamma1      1.0
+omega_d     0.2   0.0
+
+gamma_s     0.1   0.1
+d           1.0
+lambda	    0.633
+
+tf          200.0
+timeprint   0.2
+dt          1e-3

@@ -388,6 +388,22 @@ void parse_input_file(struct lc_cell  * lc,
 	  fgets(garbage,400,stdin);
 	  
 	}
+      else if (strcmp(parser,"nz") == 0  || strcmp(parser,"Nz" ) == 0 || strcmp(parser,"NZ" ) == 0 || strcmp(parser,"nZ" ) == 0  )
+	{
+	  
+	  error_handler=scanf("%d",&lc->nz);
+	  
+	  if (error_handler <= 0 )
+	    {
+
+	      printf("You placed a comment or a non numeric value after %s in your input file.\n",parser);
+	      
+	      printf("Please review your input file.\n Aborting the program\n");
+	      exit(0);
+	    };
+	  fgets(garbage,400,stdin);
+	  
+	}	      
       else if (parser[0]=='#')
 	{
 
