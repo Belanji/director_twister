@@ -10,6 +10,12 @@
 #include "./parser.h"
 const static double pi=3.141592653589793;
 
+int print_derivative( const double * phi,
+		      const double time,
+		      const double dz,
+		      const int nz,
+		      FILE * fileToWrite );
+
 
 
 int main (int argc, char * argv[]) {
@@ -18,17 +24,22 @@ int main (int argc, char * argv[]) {
   double * theta, * phi;
   struct lc_cell lc_environment;
   struct optical_setup opt;
-  double ti=0.0, tf=50.0;
-  double time=ti, dz, trans, dt=1e-3;
+  double  tf=50.0;
+  double time, dz, trans, dt=1e-3;
   double timeprint=0.2;
-  FILE * time_file, * snapshot_file, * transmitance_file;
+  FILE * time_file, * snapshot_file, * transmitance_file, * twsiting_power_file;
+  const char * initial_conditions="standard";
   const char * time_file_name="phi_bottom_middle_top.dat";
-  const char * transmitance_file_name="transmitance_time.dat";    
+  const char * transmitance_file_name="transmitance_time.dat";
+  const char * derivative_file_name="phi_derivative.dat";
+  const char * output_file_name="phi_time.dat";
   int timesteper_kind_flag=0;
   double complex Pol[2][2]= { {1.0, 0.0} , {0.0, 0.0} };
   double complex Anal[2][2]= { {0.0, 0.0} , {0.0, 1.0} };
   double complex Ei[2][2]= { {1.0/sqrt(2.0), 0.0} , {1.0*I/sqrt(2.0), 0.0} };
   int nz;
+
+
   
   for (int ii=0; ii<=1; ii++)
     {
@@ -42,6 +53,10 @@ int main (int argc, char * argv[]) {
 	};
     };
   //Standard values:
+  strcpy(lc_environment.initial_conditions,initial_conditions);
+  strcpy(lc_environment.output_file_name,output_file_name);
+
+
   lc_environment.k11=1.0;
   lc_environment.k22=1.0;
   lc_environment.k33=1.0;
@@ -67,7 +82,10 @@ int main (int argc, char * argv[]) {
   lc_environment.omega_d[1]=0.0;
 
   opt.lambda=0.600;
-  
+
+  lc_environment.ti=0.;
+  lc_environment.tf=50.;
+  lc_environment.dt=0.2;
   
   //Read the parameter values form the input file:
   parse_input_file(  & lc_environment, & opt , & tf, & timeprint , & dt );
@@ -77,7 +95,7 @@ int main (int argc, char * argv[]) {
   nz=lc_environment.nz;
   dz=lc_environment.cell_length/(nz-1);
   lc_environment.dz=dz;
-
+  time=lc_environment.ti;
   
   //Starting the PDE solver:
   gsl_odeiv2_system sys = {frank_energy, jacobian, nz, &lc_environment};
@@ -92,21 +110,74 @@ int main (int argc, char * argv[]) {
 
 
   time_file=fopen(time_file_name,"w");
-  snapshot_file=fopen("phi_time.dat","w");
+  snapshot_file=fopen(lc_environment.output_file_name,"w");
   transmitance_file=fopen(transmitance_file_name,"w");
+  twsiting_power_file=fopen(derivative_file_name,"w");
+
   
   phi= (double *) malloc( 2*(nz)*sizeof(double) );
   theta=(phi+nz);
 
-  
-  for (int ii=0; ii<nz;ii++)
+  if ( strcmp(lc_environment.initial_conditions,"standard") == 0 )
+    {
+      for (int ii=0; ii<nz;ii++)
+	{
+
+	  phi[ii]=(lc_environment.q*ii)*dz;
+	  theta[ii]=0.0;
+
+	};
+    }
+  else if ( strcmp(lc_environment.initial_conditions,"read_from_file") == 0 || strcmp(lc_environment.initial_conditions,"ic_file") == 0)
     {
 
-      phi[ii]=(lc_environment.q*ii)/(nz-1);
-      theta[ii]=0.0;
 
+
+      int i,j,k,ii,jj,kk;
+      double trash_double;	
+      FILE * ic_file;
+      char string_placeholder[400];
+      int read_status;
+      int reading_line=1;
+  
+      ic_file=fopen(lc_environment.ic_file_name,"r");
+      if (ic_file== NULL)
+	{
+	  printf("Unable to find the file \"%s\".\nPlease check your initial condition file name.\n\nAborting the program.\n\n",lc_environment.ic_file_name);
+	  exit(0);
+	}
+
+      //get the file header:
+  
+      printf("\nReading initial conditions from \"%s\".\n",lc_environment.ic_file_name);
+  
+      //removing the header:
+      fgets(string_placeholder,400,ic_file);
+      reading_line++;
+
+
+      //Let's work:
+
+      for(k= 0; k< nz; k++)
+	{
+	  fgets(string_placeholder,400,ic_file);
+	  read_status=sscanf(string_placeholder,"%lf %lf\n",&trash_double,&phi[k]);
+	  //read_check(read_status,reading_line);
+
+
+      	      
+	  reading_line++;
+	}
+      
+  
+    }
+  else 
+    {
+
+      printf("No initial condition named %s is defined.\nAborting the program.\n\n",lc_environment);
+      exit(0);
+  
     };
-
 
   trans=optical_transmitance (phi, theta, nz, & lc_environment, &opt);
   
@@ -118,13 +189,18 @@ int main (int argc, char * argv[]) {
   fprintf( transmitance_file,"#time        transmitance\n" );
   fprintf( transmitance_file,"%f  %f \n",time, trans );
 
+ 
   print_snapshot_to_file(phi,time,dz,nz,snapshot_file);
+  print_derivative(phi,time,dz,nz,twsiting_power_file );
 
+
+  printf("time=%lf/%lf\n",time,tf);	
   while(time <tf)
     {
+
       int status = gsl_odeiv2_driver_apply (pde_driver, &time, time+timeprint, phi);      
 
-      
+
       if (status != GSL_SUCCESS)
 	{
 
@@ -132,11 +208,13 @@ int main (int argc, char * argv[]) {
    
 	};
 
+      printf("time=%lf/%lf\n",time,tf);
       trans=optical_transmitance (phi, theta, nz, & lc_environment, &opt);
       print_snapshot_to_file(phi,time,dz,nz,snapshot_file);
       fprintf(time_file,"%f  %f  %f  %f\n",time, phi[0],phi[(nz-1)/2], phi[nz-1]);
       fprintf( transmitance_file,"%f  %f \n",time, trans );
-
+      print_derivative(phi,time,dz,nz,twsiting_power_file );
+	
     };
   
 
@@ -186,7 +264,7 @@ int frank_energy (double t, const double phi[], double f[], void * params)
   f[0]=(-(k22*(-((phi[1]-phi[0])/dz) + q)) + wa[0]*cos(pretwist[0] + omega_d[0]*t - phi[0])*sin(pretwist[0] + omega_d[0]*t - phi[0]))/surf_viscosity[0];
 
 
-f[nz-1]=(k22*(-((phi[nz]-phi[nz-1])/dz) + q) + wa[1]*cos(pretwist[1] + omega_d[1]*t - phi[nz])*sin(pretwist[1] + omega_d[1]*t - phi[nz]))/surf_viscosity[1];
+f[nz-1]=( k22*(-((phi[nz-1]-phi[nz-2])/dz) + q) + wa[1]*cos(pretwist[1] + omega_d[1]*t - phi[nz-1])*sin(pretwist[1] + omega_d[1]*t - phi[nz-1]) )/surf_viscosity[1];
 
   //Boundary conditions n=1
 
@@ -208,7 +286,7 @@ int jacobian(double t, const double phi[], double * dfdphi, double dfdt[], void 
   double omega_d[2],wa[2], pretwist[2];
   double viscosity, surf_viscosity[2];
   double dphi, d2phi;
-  gsl_matrix_view dfdphi_mat= gsl_matrix_view_array (dfdphi, nz+1, nz+1);
+  gsl_matrix_view dfdphi_mat= gsl_matrix_view_array (dfdphi, nz, nz);
   
   omega_d[0]=mu.omega_d[0];
   omega_d[1]=mu.omega_d[1];
@@ -230,7 +308,7 @@ int jacobian(double t, const double phi[], double * dfdphi, double dfdt[], void 
     };
   
   dfdt[0]=(omega_d[0]*wa[0]*pow(cos(pretwist[0] + omega_d[0]*t - phi[0]),2) - omega_d[0]*wa[0]*pow( sin(pretwist[0] + omega_d[0]* t - phi[0]), 2))/surf_viscosity[0];
-  dfdt[nz-1]=(omega_d[1]*wa[1]*pow(cos(pretwist[1] + omega_d[1]*t - phi[nz]),2) - omega_d[1]*wa[1]*pow( sin(pretwist[1] + omega_d[1]* t - phi[nz]), 2))/surf_viscosity[1];
+  dfdt[nz-1]=(omega_d[1]*wa[1]*pow(cos(pretwist[1] + omega_d[1]*t - phi[nz-1]),2) - omega_d[1]*wa[1]*pow( sin(pretwist[1] + omega_d[1]* t - phi[nz-1]), 2))/surf_viscosity[1];
 
   
   for(int i=1;i<nz-1;i++){
@@ -424,3 +502,25 @@ double optical_transmitance (const double *phi,
 }
 
  
+int print_derivative( const double * phi,
+		      const double time,
+		      const double dz,
+		      const int nz,
+		      FILE *fileToWrite )			       
+{
+
+  fprintf(fileToWrite,"time=%f\n",time);
+
+
+  for(int ii=1;ii<nz-1;ii++)
+    {
+
+      fprintf(fileToWrite,"%lf  %f\n",dz*ii, (phi[ii+1]-phi[ii-1])/(2*dz));
+	      
+
+    };
+
+  
+  fprintf(fileToWrite,"\n\n");
+  return 0;
+};

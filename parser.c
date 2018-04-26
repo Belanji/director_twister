@@ -3,7 +3,24 @@
 #include <string.h>
 #include <stdlib.h>
 const static double pi=3.141592653589793;
- 
+
+void error_check(int error_handler,
+		  char parser[])
+
+{
+
+  	  if (error_handler <= 0 )
+	    {
+	    printf("You placed a comment or a non numeric value after %s in your input file.\n",parser);
+	  printf("Please review your input file.\n Aborting the program\n");
+	  exit(0);
+	    }
+	  
+}
+
+
+
+
 void parse_input_file(struct lc_cell  * lc,
 		      struct optical_setup  * opt,
 		      double * tf,
@@ -126,6 +143,16 @@ void parse_input_file(struct lc_cell  * lc,
 
 
 	}
+      else if (strcmp(parser,"ti") == 0 || strcmp(parser,"start_time") ==0 )
+	{
+
+
+	  error_handler=scanf("%lf",&lc->ti);
+	  error_check(error_handler,parser);
+	  fgets(garbage,400,stdin);
+
+
+	}
       else if (strcmp(parser,"tf") == 0 || strcmp(parser,"run_time") ==0 )
 	{
 
@@ -146,7 +173,7 @@ void parse_input_file(struct lc_cell  * lc,
 	  fgets(garbage,400,stdin);
 
 
-	}
+	}      
       else if (strcmp(parser,"dt") == 0 || strcmp(parser,"maximum_timestep") ==0 )
 	{
 
@@ -292,7 +319,7 @@ void parse_input_file(struct lc_cell  * lc,
 	  
 
 	}
-            else if (strcmp(parser,"chiral_power") == 0  || strcmp(parser,"q") == 0 )
+            else if (strcmp(parser,"chiral_power") == 0  || strcmp(parser,"q0") == 0 || strcmp(parser,"q") == 0 )
 	{
 
 	  
@@ -403,7 +430,38 @@ void parse_input_file(struct lc_cell  * lc,
 	    };
 	  fgets(garbage,400,stdin);
 	  
-	}	      
+	}
+      else if ( strcmp(parser,"initial_conditions") == 0 )
+	{
+
+	  error_handler=scanf("%200s",&lc->initial_conditions);
+	  error_check(error_handler,parser);
+	  fgets(garbage,400,stdin);
+	  
+
+	}
+      else if ( strcmp(parser,"ic_file") == 0 || strcmp(parser,"initial_conditions_file") == 0 || strcmp(parser,"input_initial_conditions") == 0 || strcmp(parser,"input_initial_conditions_file") == 0)
+	{
+
+	  error_handler=scanf("%200s",&lc->ic_file_name);
+	  lc->ic_file_flag=1;
+	  error_check(error_handler,parser);
+	  fgets(garbage,400,stdin);
+
+
+	}
+      else if ( strcmp(parser,"output_file_name") == 0 ||
+		strcmp(parser,"output_file") == 0 )
+	{
+
+	  error_handler=scanf("%s",&(lc->output_file_name));
+	  error_check(error_handler,parser);
+		
+	  
+	  fgets(garbage,400,stdin);
+
+
+	}
       else if (parser[0]=='#')
 	{
 

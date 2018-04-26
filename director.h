@@ -8,6 +8,7 @@ struct lc_cell
 
   double k11,k22,k33;
   double n0, ne;
+  double ti, tf, dt;
   double viscosity, surf_viscosity[2];
   double pretwist[2], pretilt[2];
   double wa[2], omega_d[2];
@@ -15,6 +16,11 @@ struct lc_cell
   double dz;
   double q;
   int nz;
+  char output_file_name[200];
+  char initial_conditions[200];
+  char ic_file_name[200];
+  int ic_file_flag;
+
 };
 
 

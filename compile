@@ -3,6 +3,8 @@
 rm director_twister
 #icc -m64 -xHost -O2  parser.c director.c -lm -lgsl -lgslcblas -o director_twister
 
-gcc -static parser.c director.c -lm -lgsl -lgslcblas -o director_twister
+icc -m64 -xHost -O0  parser.c director.c -g -lm -lgsl -lgslcblas -o director_twister
+
+#gcc -Ofast -static  parser.c director.c -lgslcblas -lgsl -lm -o director_twister
 
 

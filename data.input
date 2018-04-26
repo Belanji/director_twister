@@ -6,14 +6,20 @@ k33         1.00
 n0          1.54
 ne          1.70
 wa          300.0   300.0
-q           0.0
+p0           0.338
 gamma1      1.0
 omega_d     0.2   0.0
 
 gamma_s     0.1   0.1
-d           1.0
+d           5.070
 lambda	    0.633
 
-tf          200.0
+ti          0.2
+tf          0.4
 timeprint   0.2
 dt          1e-3
+
+
+#initial_conditions  read_from_file
+#ic_file             ic_file.dat
+#output_file         output_file.dat
